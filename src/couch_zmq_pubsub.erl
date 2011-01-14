@@ -3,7 +3,7 @@
 %%% This file is part of couch_zmq released under the MIT license. 
 %%% See the NOTICE for more information.
 
--module(couch_zmq_db_updates).
+-module(couch_zmq_pubsub).
 -behaviour(gen_server).
 
 -include("couch_db.hrl").
@@ -40,7 +40,7 @@ init([]) ->
     io:format("init", []),
     ok = couch_config:register(fun couch_zmq_db_updates:config_change/2),
     {ok, _Pid} = zmq:start_link(),
-    Uri = couch_config:get("couch_zmq", "db_updates",
+    Uri = couch_config:get("couch_zmq", "pub_spec",
         "tcp://127.0.0.1:7984"),
     case zmq:socket(pub, []) of
         {ok, Socket} ->
@@ -120,9 +120,7 @@ changes_row(_, Seq, Id, Del, Results, _, false) ->
 deleted_item(true) -> [{<<"deleted">>, true}];
 deleted_item(_) -> [].
 
-config_change("couch_zmq", "db_update") ->
-    io:format("s ~p",
-        [supervisor:which_children(couch_secondary_services)]),
-    [Pid] = [P || {couch_zmq_db_updates,P,_,_}
+config_change("couch_zmq", "pub_spec") ->
+    [Pid] = [P || {couch_zmq_pubsub,P,_,_}
         <- supervisor:which_children(couch_secondary_services)],
     stop(Pid).

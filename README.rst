@@ -13,11 +13,11 @@ can also change the path of couchdb installation in rebar.config.
 
     $ make
 
-Add couch_zmq_db_updates server to couch configuration file *local_dev.ini* 
+Add couch_zmq_pubsub server to couch configuration file *local_dev.ini* 
 and edit the **[daermons]** section::
 
     [daemons]
-    couch_zmq_updates={couch_zmq_db_updates, start_link, []}
+    couch_zmq_pubsub={couch_zmq_pubsub, start_link, []}
 
 Start couchdb::
 
