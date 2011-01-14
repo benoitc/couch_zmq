@@ -20,6 +20,7 @@
          stop/1]).
 
 -record(state, {
+    context,
     socket,
     notify_pid,
     dbs = dict:new()
@@ -38,11 +39,13 @@ stop(Pid) ->
 init([]) ->
     process_flag(trap_exit, true),
     io:format("init", []),
-    ok = couch_config:register(fun couch_zmq_db_updates:config_change/2),
-    {ok, _Pid} = zmq:start_link(),
+    ok = couch_config:register(fun ?MODULE:config_change/2),
+    IOThreads = list_to_integer(couch_config:get("couch_zmq",
+            "iothreads", "1")),
+    {ok, Context} = zmq:init(IOThreads),
     Uri = couch_config:get("couch_zmq", "pub_spec",
         "tcp://127.0.0.1:7984"),
-    case zmq:socket(pub, []) of
+    case zmq:socket(Context, pub) of
         {ok, Socket} ->
              zmq:bind(Socket, Uri),
              Self = self(),
@@ -52,18 +55,18 @@ init([]) ->
                      (_) ->
                          ok
                  end),
-             {ok, #state{socket=Socket, notify_pid=Notify}};
-        Error ->
+             {ok, #state{context=Context, socket=Socket, notify_pid=Notify}};
+         Error ->
              ?LOG_ERROR("~p error creating socket: ~p\n", [self(),
                      Error]),
-             throw({error, Error})
+             throw(Error)
     end.
 
 handle_call(_Msg, _From, State) ->
     {reply, ok, State}.
 
 handle_cast({change, updated, DbName}, #state{socket=S, dbs=Dbs}=State) ->
-    Options = [{user_ctx, #user_ctx{roles=[<<"_admin">>]}}],
+    Options = [{user_context, #user_ctx{roles=[<<"_admin">>]}}],
     Dbs1 = case couch_db:open(DbName, Options) of
         {ok, Db} ->
             StartSeq = case dict:find(DbName, Dbs) of
@@ -91,9 +94,10 @@ handle_info(_Msg, State) ->
 code_change(_OldVsn, State, _Extra) ->
     {ok, State}.
 
-terminate(_Reson, #state{notify_pid=Pid, socket=S}) ->
+terminate(_Reson, #state{context=C, socket=S, notify_pid=Pid}) ->
     couch_db_update_notifier:stop(Pid),
     zmq:close(S),
+    zmq:term(C),
     ok.
 
 
@@ -117,10 +121,18 @@ changes_row(_, Seq, Id, Del, Results, _, false) ->
     {[{<<"seq">>, Seq}, {<<"id">>, Id}, {<<"changes">>, Results}] ++
         deleted_item(Del)}.
 
-deleted_item(true) -> [{<<"deleted">>, true}];
-deleted_item(_) -> [].
+deleted_item(true) -> 
+    [{<<"deleted">>, true}];
+deleted_item(_) -> 
+    [].
 
+config_change("couch_zmq", "iothreads") ->
+    stop(get_pid());
 config_change("couch_zmq", "pub_spec") ->
+    stop(get_pid()).
+
+% private api
+get_pid() ->
     [Pid] = [P || {couch_zmq_pubsub,P,_,_}
         <- supervisor:which_children(couch_secondary_services)],
-    stop(Pid).
+    Pid.

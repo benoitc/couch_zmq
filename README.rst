@@ -11,7 +11,7 @@ can also change the path of couchdb installation in rebar.config.
 
 ::
 
-    $ make
+    $ COUCHDB_SRC="/path/to/couchdb/src" make
 
 Add couch_zmq_pubsub server to couch configuration file *local_dev.ini* 
 and edit the **[daermons]** section::
