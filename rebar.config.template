@@ -1,0 +1,22 @@
+%%% -*- erlang -*-
+%%%
+%%% This file is part of couch_zmq released under the MIT license. 
+%%% See the NOTICE for more information.
+
+{erl_opts, [{i, "@COUCHDB_SRC@"}]}.
+
+{edoc_opts, [
+    {application, ["couchzmq"]}
+    ]}.
+
+{deps, [
+
+    %% erlzmq 
+    {zmq, ".*", {git, "git://github.com/benoitc/erlzmq.git", {tag,
+        "erlzmq-0.1"}}}
+]}.
+
+{sub_dirs, [
+    "rel"
+]}.
+

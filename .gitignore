@@ -4,3 +4,4 @@ ebin
 edoc-info
 .DS_Store
 deps/
+rebar-dev.config

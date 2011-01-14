@@ -6,20 +6,27 @@ COUCHDB_SRC ?= "../couchdb/src/couchdb"
 .PHONY: deps couchdb_src
 
 all: deps couchdb_src
-	./rebar compile
+	@./rebar compile 
+
+dev: deps dev_couchdb_src
+	@./rebar -C rebar-dev.config compile	
 
 couchdb_src:
-	@cp rebar.config rebar.config.orig && \
-		cat rebar.config | \
-		sed -e "s:../couchdb/src/couchdb:${COUCHDB_SRC}:g" > \
-		.~rebar.config && mv .~rebar.config rebar.config
+	@cat rebar.config.template | \
+		sed -e "s:@COUCHDB_SRC@:${COUCHDB_SRC}:g" > \
+		rebar.config
 
+dev_couchdb_src:
+	@cat rebar.config.template | \
+		sed -e "s:@COUCHDB_SRC@:${COUCHDB_SRC}:g" > \
+		rebar-dev.config
+	
 deps: 
 	@./rebar get-deps
 
 clean:
-	@if [ -f "rebar.config.orig" ]; then \
-		mv rebar.config.orig rebar.config; \
-	fi
+	@rm -rf rebar-dev.config
 	@./rebar clean
 
+distclean: clean
+	@rm -rf deps

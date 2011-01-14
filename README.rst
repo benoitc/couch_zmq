@@ -7,11 +7,15 @@ Install
 -------
 
 Make sure Couchdb is installed on folder above the couch_zmq one. You
-can also change the path of couchdb installation in rebar.config.
+can also change the path of couchdb installation by passing the path to
+**COUCHDB_SRC* environment variable..
 
 ::
 
-    $ COUCHDB_SRC="/path/to/couchdb/src" make
+    $ make
+
+(note during development you can use *make dev* command).
+
 
 Add couch_zmq_pubsub server to couch configuration file *local_dev.ini* 
 and edit the **[daermons]** section::
